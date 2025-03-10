@@ -124,7 +124,7 @@ public sealed class RacecarHud : MonoSingleton<RacecarHud> {
             return false;
         }
 
-        this.crosshairReference = hudOptions.GetComponentInChildren<Crosshair>();
+        this.crosshairReference = CanvasController.Instance.crosshair;
 
         this.InitWheel(powerUpMeter);
 
