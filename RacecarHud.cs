@@ -15,65 +15,23 @@ public sealed class RacecarHud : MonoSingleton<RacecarHud> {
 
     private bool initialized = false;
 
-    private GameObject fist = new();
-    private GameObject gun = new();
     private GameObject wheel = new();
 
     private Crosshair crosshairReference = new();
-    private List<GameObject> fistList = new();
-
-    private float fistFade = Config.IconFadeTime;
-    private float gunFade = Config.IconFadeTime;
-
-    internal bool fadeIcons;
-    private bool southpaw;
-    private bool newHandedness = true;
-
-    public bool LeftHanded {
-        get => this.southpaw;
-        set {
-            this.southpaw = value;
-            this.newHandedness = true;
-        }
-    }
-
-    public void RefreshFist() => this.fistFade = Config.IconFadeTime;
-    public void RefreshGun() => this.gunFade = Config.IconFadeTime;
 
     public void Update() {
         if (!this.TryInit()) {
             return;
         }
 
-        this.UpdateHandedness();
-        this.UpdateFade(ref this.fistFade, this.fist);
-        this.UpdateFade(ref this.gunFade, this.gun);
-
-        var gunIcon = this.gun.GetComponent<Image>();
-        var gunTransform = this.gun.GetComponent<RectTransform>();
-        gunTransform.sizeDelta = GetTexSize(gunIcon) * Config.GunIconScale;
-
         var gunc = GunControl.Instance;
-        var weaponWheelVisible = WeaponWheel.Instance.isActiveAndEnabled;
         // the information that this HUD shows is never relevant in these secret levels
         var inSecret = SceneManager.GetActiveScene().name is "Level 0-S" or "Level 1-S" or "Level 4-S";
-
-        var showGun = true;
-        showGun &= !weaponWheelVisible;
-        showGun &= gunc.allWeapons.Count > 1;
-        showGun &= !inSecret;
-
-        var showFist = true;
-        showFist &= !weaponWheelVisible;
-        showFist &= this.fistList.Count > 1;
-        showFist &= !inSecret;
 
         var showWheel = true;
         showWheel &= gunc.slot4.Count > 0;
         showWheel &= !inSecret;
 
-        this.gun.SetActive(showGun);
-        this.fist.SetActive(showFist);
         this.wheel.SetActive(showWheel);
 
         var weaponCharges = WeaponCharges.Instance;
@@ -88,35 +46,6 @@ public sealed class RacecarHud : MonoSingleton<RacecarHud> {
 
         this.UpdateStaminaColors();
         this.UpdatePersistentHp();
-    }
-
-    private void UpdateFade(ref float fade, GameObject icon) {
-        fade = this.fadeIcons ? Mathf.MoveTowards(fade, 0, Time.deltaTime) : Config.IconFadeTime;
-        icon.GetComponent<CanvasRenderer>().SetAlpha(Mathf.Min(1, fade));
-    }
-
-    private void UpdateHandedness() {
-        if (!this.newHandedness) {
-            return;
-        }
-        this.newHandedness = false;
-
-        var fistTransform = this.fist.GetComponent<RectTransform>();
-        var gunTransform = this.gun.GetComponent<RectTransform>();
-
-        if (this.southpaw) {
-            fistTransform.pivot = new(0, 0.5f);
-            fistTransform.anchoredPosition = new(Config.FistIconOffset, 0);
-
-            gunTransform.pivot = new(1, 0.5f);
-            gunTransform.anchoredPosition = new(-Config.GunIconOffset, 0);
-        } else {
-            fistTransform.pivot = new(1, 0.5f);
-            fistTransform.anchoredPosition = new(-Config.FistIconOffset, 0);
-
-            gunTransform.pivot = new(0, 0.5f);
-            gunTransform.anchoredPosition = new(Config.GunIconOffset, 0);
-        }
     }
 
     private void UpdateStaminaColors() {
@@ -189,59 +118,19 @@ public sealed class RacecarHud : MonoSingleton<RacecarHud> {
             return true;
         }
 
-        var fistControl = FistControl.Instance;
-        var weaponHud = WeaponHUD.Instance;
         var powerUpMeter = PowerUpMeter.Instance;
-        var hudOptions = HUDOptions.Instance;
 
-        if (fistControl == null || weaponHud == null || powerUpMeter == null || hudOptions == null) {
+        if (powerUpMeter == null) {
             return false;
         }
 
         this.crosshairReference = hudOptions.GetComponentInChildren<Crosshair>();
-        this.fadeIcons = PrefsManager.Instance.GetBool("crossHairHudFade");
 
-        this.InitFist(fistControl);
-        this.InitGun(weaponHud);
         this.InitWheel(powerUpMeter);
 
         log.LogInfo("hud initialized");
         this.initialized = true;
         return true;
-    }
-
-    private void InitFist(FistControl fistControl) {
-        var fist = new GameObject("Fist");
-
-        fist.AddComponent<Image>();
-
-        var icon = fistControl.fistIcon;
-
-        var copyImg = fist.AddComponent<CopyImage>();
-        copyImg.imgToCopy = icon;
-        copyImg.copyColor = true;
-
-        var rt = this.InitTransform(fist);
-        rt.sizeDelta = GetTexSize(icon) * Config.FistIconScale;
-
-        var fieldInfo = fistControl.GetType().GetField("spawnedArms", BindingFlags.Instance | BindingFlags.NonPublic);
-        this.fistList = (List<GameObject>)fieldInfo.GetValue(fistControl);
-
-        this.fist = fist;
-    }
-
-    private void InitGun(WeaponHUD weaponHud) {
-        var gun = new GameObject("Gun");
-
-        gun.AddComponent<Image>();
-
-        var copyImg = gun.AddComponent<CopyImage>();
-        copyImg.imgToCopy = weaponHud.GetComponentInChildren<Image>();
-        copyImg.copyColor = true;
-
-        this.InitTransform(gun);
-
-        this.gun = gun;
     }
 
     private void InitWheel(PowerUpMeter powerUpMeter) {
@@ -282,6 +171,4 @@ public sealed class RacecarHud : MonoSingleton<RacecarHud> {
         rt.anchorMin = rt.anchorMax = new(0.5f, 0.5f);
         return rt;
     }
-
-    private static Vector2 GetTexSize(Image icon) => new(icon.mainTexture.width, icon.mainTexture.height);
 }
