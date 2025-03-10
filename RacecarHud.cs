@@ -89,6 +89,8 @@ public sealed class RacecarHud : MonoSingleton<RacecarHud> {
     }
 
     public void ApplyHiVisOverhealSettings() {
+        TryInit();
+        
         var chuds = this.crosshairReference.chuds;
         var circles = this.crosshairReference.circles;
         var overheal = chuds[7];
